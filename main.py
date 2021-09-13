@@ -1,12 +1,10 @@
-import threading
 import colorama
 import json
+import threading
 from controller import search_shoes, scrape_goat, scrape_klekt, scrape_restocks, scrape_stockx, return_klekt, return_restocks, return_stockx
 from tabulate import tabulate
 from termcolor import colored
-import time
-import datetime
-import multiprocessing
+from time import sleep, time
 
 colorama.init()
 
@@ -38,9 +36,9 @@ def main():
         threads = []
 
         paint(f'Selected shoe: {shoe_name} - {sku}', 'green')
-        time.sleep(0.3)
+        sleep(0.3)
         paint('Scraping sites...', 'yellow')
-        start = time.time()
+        start = time()
 
         t1 = threading.Thread(target = scrape_restocks, args = (product_url_restocks,))
         t2 = threading.Thread(target = scrape_stockx, args = (sku,))
@@ -59,13 +57,12 @@ def main():
         sizes_list_stockx = return_stockx()
         sizes_list_klekt = return_klekt()
 
-        end = time.time()
+        end = time()
         paint(f'Time elapsed: {end-start}s', 'blue')
 
         try:
             sizes_list_klekt.sort(key = lambda x :float(x[0]))
         except ValueError as e:
-            print(f'{e}. Passing.')
             pass
 
         #Join all information to be used
