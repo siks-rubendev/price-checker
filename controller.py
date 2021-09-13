@@ -1,23 +1,20 @@
-import requests
-import json
-from bs4 import BeautifulSoup
-from time import sleep
-from termcolor import colored
 import colorama
+import json
 import re
-from threading import Thread
-import traceback
-import time
+import requests
+from bs4 import BeautifulSoup
+from termcolor import colored
+from time import sleep, time
 
 colorama.init()
 
 s = requests.session()            
-#Development purposes (Comment if not using Charles Proxy)
-CHARLES_CERTIFICATE = './charles-cert/charles-cert.pem'
+#Development purposes (Uncomment if using Charles Proxy)
+""" CHARLES_CERTIFICATE = './charles-cert/charles-cert.pem'
 LOCAL = {'https': 'http://127.0.0.1:8888'}
 s.verify = CHARLES_CERTIFICATE
 s.proxies.update(LOCAL)
-s.trust_env = False
+s.trust_env = False """
 
 restocks_list, stockx_list, klekt_list, goat_list = [], [], [], []
 
@@ -28,7 +25,7 @@ def search_shoes(param):
         r = s.get(f'https://restocks.net/es/shop/search?q={param}&page=1&filters[][range][price][gte]=1')
         return r
     except Exception as e:
-        print(f'Something went wrong. {e}')
+        paint(f'Something went wrong. {e}', 'red')
 
 
 def scrape_restocks(url):
@@ -175,6 +172,7 @@ def scrape_stockx(sku):
         except Exception as e:
             paint('Something went wrong while scraping StockX... {e}', 'red')
             sleep(1.5)
+
     #Toda la info sobre cada una de las tallas la tengo en json_info['Product]['children'][child]['market']
 
     global stockx_list
@@ -227,6 +225,7 @@ def scrape_klekt(sku):
         },
         "query": "query SearchProducts($input: SearchInput!) {\n  search(input: $input) {\n    items {\n      productId\n      slug\n      styleCode\n      categoryNames\n      brandNames\n      brandLineNames\n      productName\n      description\n      variantsCount\n      sameDayShipping\n      sdsPriceWithTaxMin\n      styleCode\n      sizeType\n      conditions {\n        condition\n      }\n      customMappings {\n        ... on CustomProductMappings {\n          featured\n          new\n        }\n      }\n      priceWithTax {\n        ... on PriceRange {\n          min\n          max\n        }\n      }\n      productAsset {\n        id\n        preview\n      }\n    }\n    totalItems\n  }\n}\n"
     }
+
     sizes = {}
     sizes_list = []
     while 1:
@@ -269,8 +268,7 @@ def scrape_klekt(sku):
                     return
                     
         except Exception as e:
-            print(f'Something went wrong on Klekt. Retrying... {e}')
-            traceback.print_exc()
+            paint(f'Something went wrong on Klekt. Retrying... {e}', 'red')
             sleep(1.5)
       
 
@@ -294,9 +292,9 @@ def return_goat():
     return goat_list
 
 
-#Goat renders its page dynamically, using a bunch of js files, which script tags are also loaded dynamically. 
+#Goat renders its page dynamically, using a bunch of js files, where script tags are also loaded dynamically. 
 #In the first place, I need the product 'slug' to be able to perform the right request to the GOAT API.
-#I can find the slug under an 'a' tag (href value), once the page is fully loaded.
+#I can find the slug under an 'a' tag (href value), once the search page is fully loaded.
 #Once I have the slug of the product, its just performing the correct requests to the API.
 def scrape_goat(sku):
 
@@ -318,16 +316,13 @@ def scrape_goat(sku):
     }
 
     search_page_response = s.get(base_search_url, headers = headers)
-    print(search_page_response.status_code)
-    print(search_page_response.text)
-
     soup = BeautifulSoup(search_page_response.text, 'html.parser')
 
-    start = time.time()
+    start = time()
     for element in soup.find_all('a'):
         print(element)
         sleep(0.2)
         if re.search(f'{sku}$', element['href']):
             print(element['href'])
-    end = time.time()
+    end = time()
     print('Elapsed time, ', end-start)
